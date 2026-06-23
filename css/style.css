@@ -1339,3 +1339,29 @@ footer[id] {
 .mob-icon-icon {
   fill: #f4f4fd;
 }
+
+.modal-message {
+  min-height: 18px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.17;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.modal-message-info {
+  color: #4d5ae5;
+}
+
+.modal-message-success {
+  color: #31d0aa;
+}
+
+.modal-message-error {
+  color: #e74c3c;
+}
+
+.modal-btn:disabled {
+  cursor: not-allowed;
+  background-color: #8e8f99;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "web-studio-modern",
+  "version": "1.0.0",
+  "description": "Responsive landing page with a contact request backend and Telegram notifications.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js"
+  },
+  "keywords": [
+    "landing-page",
+    "telegram",
+    "contact-form"
+  ],
+  "author": "",
+  "license": "ISC"
+}
