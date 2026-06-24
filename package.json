@@ -15,5 +15,8 @@
     "contact-form"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "mongoose": "^8.24.1"
+  }
 }

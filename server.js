@@ -1,5 +1,6 @@
+import mongoose from "mongoose";
 import { createServer } from "node:http";
-import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -11,8 +12,34 @@ await loadEnvFile();
 const PORT = Number(process.env.PORT || 3000);
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const MONGO_URI = process.env.MONGO_URI;
 const DATA_DIR = resolve(ROOT_DIR, process.env.DATA_DIR || "data");
-const REQUESTS_DB = join(DATA_DIR, "requests.jsonl");
+
+// 🌟 1. ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ (добавляем этот блок)
+if (!MONGO_URI) {
+  console.error("❌ Помилка: MONGO_URI не знайдено в конфігурації .env");
+  process.exit(1);
+}
+
+// Быстрое асинхронное подключение
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("🚀 Успішно підключено до MongoDB Atlas!"))
+  .catch((err) => console.error("❌ Помилка підключення до MongoDB:", err));
+
+// 🌟 2. СОЗДАНИЕ СХЕМЫ И МОДЕЛИ (добавляем этот блок, чтобы RequestModel была видна везде)
+const RequestSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  createdAt: { type: String, required: true },
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  comment: String,
+  privacyAccepted: { type: Boolean, required: true },
+});
+
+// Переменная должна называться точно так же, как вы вызываете её в функции saveRequest
+const RequestModel = mongoose.model("Request", RequestSchema);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -146,9 +173,31 @@ function validateContactRequest(contactRequest) {
   return errors;
 }
 
+// async function saveRequest(contactRequest) {
+//   await mkdir(DATA_DIR, { recursive: true });
+//   await appendFile(REQUESTS_DB, `${JSON.stringify(contactRequest)}\n`, "utf8");
+// }
+
 async function saveRequest(contactRequest) {
-  await mkdir(DATA_DIR, { recursive: true });
-  await appendFile(REQUESTS_DB, `${JSON.stringify(contactRequest)}\n`, "utf8");
+  try {
+    // Покаже в консолі реальний URI, до якого підключений Mongoose
+    console.log(
+      "ℹ️ Спроба запису. Поточна база даних в Mongoose:",
+      mongoose.connection.name,
+    );
+
+    const newLog = new RequestModel(contactRequest);
+    const savedDoc = await newLog.save();
+
+    console.log(
+      "✅ УСПІХ! Заявку збережено в колекцію:",
+      savedDoc.constructor.collection.name,
+    );
+    console.log("🆔 ID документа в базі:", savedDoc._id);
+  } catch (error) {
+    console.error("❌ ПОМИЛКА під час запису в базу даних:", error.message);
+    throw error;
+  }
 }
 
 async function sendTelegramNotification(contactRequest) {
