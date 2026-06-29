@@ -232,16 +232,62 @@ async function sendTelegramNotification(contactRequest) {
   }
 }
 
+// async function serveStaticFile(request, response) {
+//   const url = new URL(request.url, `http://${request.headers.host}`);
+//   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
+//   const safePath = normalize(decodeURIComponent(pathname)).replace(
+//     /^(\.\.[/\\])+/,
+//     "",
+//   );
+//   const filePath = resolve(ROOT_DIR, `.${safePath}`);
+
+//   if (!filePath.startsWith(ROOT_DIR) || filePath.startsWith(DATA_DIR)) {
+//     sendJson(response, 403, { message: "Forbidden" });
+//     return;
+//   }
+
+//   try {
+//     const fileStat = await stat(filePath);
+
+//     if (!fileStat.isFile()) throw new Error("Not a file");
+
+//     response.writeHead(200, {
+//       "Content-Type":
+//         mimeTypes[extname(filePath)] || "application/octet-stream",
+//     });
+
+//     if (request.method === "HEAD") {
+//       response.end();
+//       return;
+//     }
+
+//     createReadStream(filePath).pipe(response);
+//   } catch {
+//     const notFoundPage = await readFile(join(ROOT_DIR, "index.html"), "utf8");
+//     response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+//     response.end(notFoundPage);
+//   }
+// }
+
 async function serveStaticFile(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
+
+  // Декодуємо URL та очищуємо від зайвих символів для безпеки
   const safePath = normalize(decodeURIComponent(pathname)).replace(
     /^(\.\.[/\\])+/,
     "",
   );
-  const filePath = resolve(ROOT_DIR, `.${safePath}`);
 
-  if (!filePath.startsWith(ROOT_DIR) || filePath.startsWith(DATA_DIR)) {
+  // 🌟 Формуємо абсолютний шлях до файлу в корені проєкту
+  const filePath = join(ROOT_DIR, safePath);
+
+  // Безпекова перевірка: забороняємо доступ до системних файлів конфігурації
+  if (
+    safePath.includes(".env") ||
+    safePath.includes("package.json") ||
+    safePath.includes("node_modules")
+  ) {
     sendJson(response, 403, { message: "Forbidden" });
     return;
   }
@@ -263,9 +309,14 @@ async function serveStaticFile(request, response) {
 
     createReadStream(filePath).pipe(response);
   } catch {
-    const notFoundPage = await readFile(join(ROOT_DIR, "index.html"), "utf8");
-    response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-    response.end(notFoundPage);
+    // Якщо файл не знайдено, віддаємо index.html (для SPA або головної)
+    try {
+      const notFoundPage = await readFile(join(ROOT_DIR, "index.html"), "utf8");
+      response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+      response.end(notFoundPage);
+    } catch (err) {
+      sendJson(response, 404, { message: "Not Found" });
+    }
   }
 }
 
