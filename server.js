@@ -218,7 +218,7 @@ async function sendTelegramNotification(contactRequest) {
         },
         {
           text: "💬 Чат у Telegram",
-          url: `https://t.me{cleanPhone}`,
+          url: `https://t.me/+${cleanPhone}`,
         },
       ],
     ],
@@ -234,10 +234,10 @@ async function sendTelegramNotification(contactRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
           parse_mode: "HTML",
+          // reply_markup: replyMarkup,
         }),
       },
     );
-    // reply_markup: replyMarkup,
     return { ok: telegramResponse.ok };
   } catch (error) {
     console.error("Telegram notification failed:", error);
