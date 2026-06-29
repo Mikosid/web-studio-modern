@@ -226,15 +226,15 @@ async function sendTelegramNotification(contactRequest) {
 
   try {
     const telegramResponse = await fetch(
-      `https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://telegram.org${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: "HTML", // 🌟 Змінили на HTML для стабільності
-          reply_markup: replyMarkup,
+          parse_mode: "HTML",
+          reply_markup: JSON.stringify(replyMarkup),
         }),
       },
     );
