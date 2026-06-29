@@ -234,11 +234,10 @@ async function sendTelegramNotification(contactRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
           parse_mode: "HTML",
-          reply_markup: replyMarkup,
         }),
       },
     );
-
+    // reply_markup: replyMarkup,
     return { ok: telegramResponse.ok };
   } catch (error) {
     console.error("Telegram notification failed:", error);
