@@ -195,30 +195,30 @@ async function sendTelegramNotification(contactRequest) {
     return { ok: false };
   }
 
-  // Очищаємо номер телефону від зайвих символів (+, пробіли, дужки) для посилань
+  // Очищаємо номер телефону від усього, крім цифр
   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
 
+  // Форматуємо текст за допомогою HTML-тегів
   const message = [
-    "🆕 *New Web Studio request*",
-    `🆔 *ID:* \`${contactRequest.id}\``, // загорнули в зворотні лапки, щоб копіювати в один клік
-    `👤 *Name:* ${contactRequest.name}`,
-    `📞 *Phone:* ${contactRequest.phone}`,
-    `📧 *Email:* ${contactRequest.email}`,
-    `💬 *Comment:* ${contactRequest.comment || "—"}`,
-    `📅 *Created:* ${contactRequest.createdAt}`,
+    "🆕 <b>New Web Studio request</b>",
+    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // загорнули в code, щоб копіювати в один клік
+    `👤 <b>Name:</b> ${contactRequest.name}`,
+    `📞 <b>Phone:</b> ${contactRequest.phone}`,
+    `📧 <b>Email:</b> ${contactRequest.email}`,
+    `💬 <b>Comment:</b> ${contactRequest.comment || "—"}`,
+    `📅 <b>Created:</b> ${contactRequest.createdAt}`,
   ].join("\n");
 
-  // Створюємо розмітку кнопок
   const replyMarkup = {
     inline_keyboard: [
       [
         {
           text: "📞 Зателефонувати",
-          url: `tel:${contactRequest.phone}`, // Схема для виклику номера
+          url: `tel:${contactRequest.phone}`,
         },
         {
           text: "💬 Чат у Telegram",
-          url: `https://t.me{cleanPhone}`, // Посилання на чат за номером
+          url: `https://t.me{cleanPhone}`,
         },
       ],
     ],
@@ -233,8 +233,8 @@ async function sendTelegramNotification(contactRequest) {
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: "Markdown", // Щоб текст вище підтримував жирність та копіювання ID
-          reply_markup: replyMarkup, // 🌟 Передаємо наші кнопки
+          parse_mode: "HTML", // 🌟 Змінили на HTML для стабільності
+          reply_markup: replyMarkup,
         }),
       },
     );
