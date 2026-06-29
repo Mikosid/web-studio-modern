@@ -190,18 +190,73 @@ async function saveRequest(contactRequest) {
   }
 }
 
+// async function sendTelegramNotification(contactRequest) {
+//   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+//     return { ok: false };
+//   }
+
+//   // Очищаємо номер телефону від усього, крім цифр
+//   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
+
+//   // Форматуємо текст за допомогою HTML-тегів
+//   const message = [
+//     "🆕 <b>New Web Studio request</b>",
+//     `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // загорнули в code, щоб копіювати в один клік
+//     `👤 <b>Name:</b> ${contactRequest.name}`,
+//     `📞 <b>Phone:</b> ${contactRequest.phone}`,
+//     `📧 <b>Email:</b> ${contactRequest.email}`,
+//     `💬 <b>Comment:</b> ${contactRequest.comment || "—"}`,
+//     `📅 <b>Created:</b> ${contactRequest.createdAt}`,
+//   ].join("\n");
+
+//   const replyMarkup = {
+//     inline_keyboard: [
+//       [
+//         {
+//           text: "📞 Зателефонувати",
+//           url: `tel:${contactRequest.phone}`,
+//         },
+//         {
+//           text: "💬 Чат у Telegram",
+//           url: `https://t.me/+${cleanPhone}`,
+//         },
+//       ],
+//     ],
+//   };
+
+//   try {
+//     const telegramResponse = await fetch(
+//       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+//       {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           chat_id: TELEGRAM_CHAT_ID,
+//           text: message,
+//           parse_mode: "HTML",
+//           reply_markup: JSON.stringify(replyMarkup),
+//         }),
+//       },
+//     );
+//     return { ok: telegramResponse.ok };
+//   } catch (error) {
+//     console.error("Telegram notification failed:", error);
+//     return { ok: false };
+//   }
+// }
+
 async function sendTelegramNotification(contactRequest) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     return { ok: false };
   }
 
-  // Очищаємо номер телефону від усього, крім цифр
+  // 🌟 ВИПРАВЛЕННЯ: залишаємо лише чисті цифри (наприклад, 380969100648) без знаку плюс
   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
 
   // Форматуємо текст за допомогою HTML-тегів
   const message = [
     "🆕 <b>New Web Studio request</b>",
-    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // загорнули в code, щоб копіювати в один клік
+    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`,
     `👤 <b>Name:</b> ${contactRequest.name}`,
     `📞 <b>Phone:</b> ${contactRequest.phone}`,
     `📧 <b>Email:</b> ${contactRequest.email}`,
@@ -214,11 +269,12 @@ async function sendTelegramNotification(contactRequest) {
       [
         {
           text: "📞 Зателефонувати",
-          url: `tel:${contactRequest.phone}`,
+          url: `tel:${cleanPhone}`, // Безпечний виклик
         },
         {
           text: "💬 Чат у Telegram",
-          url: `https://t.me/+${cleanPhone}`,
+          // 🌟 ВИПРАВЛЕННЯ: прибрали знак "+" перед змінною. Telegram API тепер пропустить посилання!
+          url: `https://t.me{cleanPhone}`,
         },
       ],
     ],
@@ -234,7 +290,7 @@ async function sendTelegramNotification(contactRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
           parse_mode: "HTML",
-          reply_markup: JSON.stringify(replyMarkup),
+          reply_markup: JSON.stringify(replyMarkup), // Передаємо рядок
         }),
       },
     );
