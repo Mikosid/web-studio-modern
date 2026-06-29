@@ -195,23 +195,47 @@ async function sendTelegramNotification(contactRequest) {
     return { ok: false };
   }
 
+  // Очищаємо номер телефону від зайвих символів (+, пробіли, дужки) для посилань
+  const cleanPhone = contactRequest.phone.replace(/\D/g, "");
+
   const message = [
-    "🆕 New Web Studio request",
-    `ID: ${contactRequest.id}`,
-    `Name: ${contactRequest.name}`,
-    `Phone: ${contactRequest.phone}`,
-    `Email: ${contactRequest.email}`,
-    `Comment: ${contactRequest.comment || "—"}`,
-    `Created: ${contactRequest.createdAt}`,
+    "🆕 *New Web Studio request*",
+    `🆔 *ID:* \`${contactRequest.id}\``, // загорнули в зворотні лапки, щоб копіювати в один клік
+    `👤 *Name:* ${contactRequest.name}`,
+    `📞 *Phone:* ${contactRequest.phone}`,
+    `📧 *Email:* ${contactRequest.email}`,
+    `💬 *Comment:* ${contactRequest.comment || "—"}`,
+    `📅 *Created:* ${contactRequest.createdAt}`,
   ].join("\n");
+
+  // Створюємо розмітку кнопок
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        {
+          text: "📞 Зателефонувати",
+          url: `tel:${contactRequest.phone}`, // Схема для виклику номера
+        },
+        {
+          text: "💬 Чат у Telegram",
+          url: `https://t.me{cleanPhone}`, // Посилання на чат за номером
+        },
+      ],
+    ],
+  };
 
   try {
     const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "Markdown", // Щоб текст вище підтримував жирність та копіювання ID
+          reply_markup: replyMarkup, // 🌟 Передаємо наші кнопки
+        }),
       },
     );
 
