@@ -250,10 +250,9 @@ async function sendTelegramNotification(contactRequest) {
     return { ok: false };
   }
 
-  // 🌟 ВИПРАВЛЕННЯ: залишаємо лише чисті цифри (наприклад, 380969100648) без знаку плюс
+  // Залишаємо лише чисті цифри номера телефону
   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
 
-  // Форматуємо текст за допомогою HTML-тегів
   const message = [
     "🆕 <b>New Web Studio request</b>",
     `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`,
@@ -268,13 +267,12 @@ async function sendTelegramNotification(contactRequest) {
     inline_keyboard: [
       [
         {
-          text: "📞 Зателефонувати",
-          url: `tel:${cleanPhone}`, // Безпечний виклик
+          text: "💬 Telegram",
+          url: `https://t.me{cleanPhone}`, // Дозволений HTTPS
         },
         {
-          text: "💬 Чат у Telegram",
-          // 🌟 ВИПРАВЛЕННЯ: прибрали знак "+" перед змінною. Telegram API тепер пропустить посилання!
-          url: `https://t.me{cleanPhone}`,
+          text: "💜 Viber",
+          url: `https://viber.click{cleanPhone}`, // Дозволений HTTPS
         },
       ],
     ],
@@ -282,7 +280,7 @@ async function sendTelegramNotification(contactRequest) {
 
   try {
     const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -290,7 +288,7 @@ async function sendTelegramNotification(contactRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
           parse_mode: "HTML",
-          reply_markup: JSON.stringify(replyMarkup), // Передаємо рядок
+          reply_markup: JSON.stringify(replyMarkup),
         }),
       },
     );
