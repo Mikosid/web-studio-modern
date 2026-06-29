@@ -226,7 +226,7 @@ async function sendTelegramNotification(contactRequest) {
 
   try {
     const telegramResponse = await fetch(
-      `https://telegram.org${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,7 +234,7 @@ async function sendTelegramNotification(contactRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
           parse_mode: "HTML",
-          reply_markup: JSON.stringify(replyMarkup),
+          reply_markup: replyMarkup,
         }),
       },
     );
