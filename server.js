@@ -15,19 +15,16 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MONGO_URI = process.env.MONGO_URI;
 const DATA_DIR = resolve(ROOT_DIR, process.env.DATA_DIR || "data");
 
-// 🌟 1. ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ (добавляем этот блок)
 if (!MONGO_URI) {
   console.error("❌ Помилка: MONGO_URI не знайдено в конфігурації .env");
   process.exit(1);
 }
 
-// Быстрое асинхронное подключение
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("🚀 Успішно підключено до MongoDB Atlas!"))
   .catch((err) => console.error("❌ Помилка підключення до MongoDB:", err));
 
-// 🌟 2. СОЗДАНИЕ СХЕМЫ И МОДЕЛИ (добавляем этот блок, чтобы RequestModel была видна везде)
 const RequestSchema = new mongoose.Schema({
   id: { type: String, required: true },
   createdAt: { type: String, required: true },
@@ -38,7 +35,6 @@ const RequestSchema = new mongoose.Schema({
   privacyAccepted: { type: Boolean, required: true },
 });
 
-// Переменная должна называться точно так же, как вы вызываете её в функции saveRequest
 const RequestModel = mongoose.model("Request", RequestSchema);
 
 const mimeTypes = {
@@ -173,14 +169,8 @@ function validateContactRequest(contactRequest) {
   return errors;
 }
 
-// async function saveRequest(contactRequest) {
-//   await mkdir(DATA_DIR, { recursive: true });
-//   await appendFile(REQUESTS_DB, `${JSON.stringify(contactRequest)}\n`, "utf8");
-// }
-
 async function saveRequest(contactRequest) {
   try {
-    // Покаже в консолі реальний URI, до якого підключений Mongoose
     console.log(
       "ℹ️ Спроба запису. Поточна база даних в Mongoose:",
       mongoose.connection.name,
@@ -232,57 +222,17 @@ async function sendTelegramNotification(contactRequest) {
   }
 }
 
-// async function serveStaticFile(request, response) {
-//   const url = new URL(request.url, `http://${request.headers.host}`);
-//   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
-//   const safePath = normalize(decodeURIComponent(pathname)).replace(
-//     /^(\.\.[/\\])+/,
-//     "",
-//   );
-//   const filePath = resolve(ROOT_DIR, `.${safePath}`);
-
-//   if (!filePath.startsWith(ROOT_DIR) || filePath.startsWith(DATA_DIR)) {
-//     sendJson(response, 403, { message: "Forbidden" });
-//     return;
-//   }
-
-//   try {
-//     const fileStat = await stat(filePath);
-
-//     if (!fileStat.isFile()) throw new Error("Not a file");
-
-//     response.writeHead(200, {
-//       "Content-Type":
-//         mimeTypes[extname(filePath)] || "application/octet-stream",
-//     });
-
-//     if (request.method === "HEAD") {
-//       response.end();
-//       return;
-//     }
-
-//     createReadStream(filePath).pipe(response);
-//   } catch {
-//     const notFoundPage = await readFile(join(ROOT_DIR, "index.html"), "utf8");
-//     response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-//     response.end(notFoundPage);
-//   }
-// }
-
 async function serveStaticFile(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
 
-  // Декодуємо URL та очищуємо від зайвих символів для безпеки
   const safePath = normalize(decodeURIComponent(pathname)).replace(
     /^(\.\.[/\\])+/,
     "",
   );
 
-  // 🌟 Формуємо абсолютний шлях до файлу в корені проєкту
   const filePath = join(ROOT_DIR, safePath);
 
-  // Безпекова перевірка: забороняємо доступ до системних файлів конфігурації
   if (
     safePath.includes(".env") ||
     safePath.includes("package.json") ||
@@ -309,7 +259,6 @@ async function serveStaticFile(request, response) {
 
     createReadStream(filePath).pipe(response);
   } catch {
-    // Якщо файл не знайдено, віддаємо index.html (для SPA або головної)
     try {
       const notFoundPage = await readFile(join(ROOT_DIR, "index.html"), "utf8");
       response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
