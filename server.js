@@ -245,55 +245,61 @@ async function saveRequest(contactRequest) {
 //   }
 // }
 
-async function sendTelegramNotification(contactRequest) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    return { ok: false };
-  }
-
-  // Очищаємо номер від усього, крім цифр (Telegram API вимагає посилання без знаку "+")
-  const cleanPhone = contactRequest.phone.replace(/\D/g, "");
-
-  // Форматуємо текст: телефон та email додаток Telegram автоматично зробить клікабельними
-  const message = [
-    "🆕 <b>New Web Studio request</b>",
-    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // Кліком по ID його можна миттєво скопіювати
-    `👤 <b>Name:</b> ${contactRequest.name}`,
-    `📞 <b>Phone:</b> ${contactRequest.phone}`,
-    `📧 <b>Email:</b> ${contactRequest.email}`,
-    `💬 <b>Comment:</b> ${contactRequest.comment || "—"}`,
-    `📅 <b>Created:</b> ${contactRequest.createdAt}`,
-  ].join("\n");
-
-  // Залишаємо одну ідеальну кнопку, яка використовує дозволений протокол https://
-  const replyMarkup = {
-    inline_keyboard: [
-      [
-        {
-          text: "💬 Чат у Telegram",
-          url: `https://t.me{cleanPhone}`,
-        },
-      ],
-    ],
-  };
-
+export async function sendTelegramNotification(contactRequest) {
   try {
-    const telegramResponse = await fetch(
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.warn("Telegram is not configured");
+      return { ok: false, reason: "missing_config" };
+    }
+
+    if (!contactRequest?.id || !contactRequest?.name) {
+      console.warn("Invalid contactRequest payload");
+      return { ok: false, reason: "invalid_payload" };
+    }
+
+    const escapeHtml = (text = "") =>
+      String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    const message = [
+      "🆕 <b>New Web Studio request</b>",
+      `🆔 <b>ID:</b> <code>${escapeHtml(contactRequest.id)}</code>`,
+      `👤 <b>Name:</b> ${escapeHtml(contactRequest.name)}`,
+      `📞 <b>Phone:</b> ${escapeHtml(contactRequest.phone)}`,
+      `📧 <b>Email:</b> ${escapeHtml(contactRequest.email)}`,
+      `💬 <b>Comment:</b> ${escapeHtml(contactRequest.comment || "—")}`,
+      `📅 <b>Created:</b> ${escapeHtml(contactRequest.createdAt)}`,
+    ].join("\n");
+
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    };
+
+    const response = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "HTML", // Підтримка HTML-тегів <b> та <code>
-          reply_markup: JSON.stringify(replyMarkup), // Передаємо кнопку як рядок
-        }),
+        body: JSON.stringify(payload),
       },
     );
-    return { ok: telegramResponse.ok };
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      console.error("Telegram API error:", data);
+      return { ok: false, reason: "telegram_error", data };
+    }
+
+    return { ok: true };
   } catch (error) {
     console.error("Telegram notification failed:", error);
-    return { ok: false };
+    return { ok: false, reason: "exception" };
   }
 }
 
