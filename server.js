@@ -246,28 +246,15 @@ async function saveRequest(contactRequest) {
 // }
 
 async function sendTelegramNotification(contactRequest) {
-  // Дивимося, чи взагалі бачить сервер ваші токени з налаштувань Render
-  console.log(
-    "🔍 [DIAGNOSTIC] TOKEN:",
-    TELEGRAM_BOT_TOKEN
-      ? "Є (Довжина: " + TELEGRAM_BOT_TOKEN.length + ")"
-      : "НЕ ЗНАЙДЕНО ❌",
-  );
-  console.log(
-    "🔍 [DIAGNOSTIC] CHAT_ID:",
-    TELEGRAM_CHAT_ID ? "Є (" + TELEGRAM_CHAT_ID + ")" : "НЕ ЗНАЙДЕНО ❌",
-  );
-
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.error("❌ [DIAGNOSTIC] Запит зупинено: відсутні змінні оточення.");
     return { ok: false };
   }
 
-  const cleanPhone = contactRequest.phone.replace(/\D/g, "");
-
+  // Форматуємо чистий текст за допомогою HTML-тегів.
+  // Браузери та смартфони самі зроблять телефон та email клікабельними!
   const message = [
     "🆕 <b>New Web Studio request</b>",
-    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`,
+    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // Кліком по ID його можна миттєво скопіювати
     `👤 <b>Name:</b> ${contactRequest.name}`,
     `📞 <b>Phone:</b> ${contactRequest.phone}`,
     `📧 <b>Email:</b> ${contactRequest.email}`,
@@ -275,46 +262,22 @@ async function sendTelegramNotification(contactRequest) {
     `📅 <b>Created:</b> ${contactRequest.createdAt}`,
   ].join("\n");
 
-  const replyMarkup = {
-    inline_keyboard: [
-      [
-        { text: "💬 Telegram", url: `https://t.me{cleanPhone}` },
-        { text: "💜 Viber", url: `https://viber.click{cleanPhone}` },
-      ],
-    ],
-  };
-
   try {
-    const url = `https://telegram.org{TELEGRAM_BOT_TOKEN}/sendMessage`;
-
-    const telegramResponse = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "HTML",
-        reply_markup: JSON.stringify(replyMarkup),
-      }),
-    });
-
-    const responseData = await telegramResponse.json();
-
-    if (!telegramResponse.ok) {
-      // 🌟 ОРАКУЛ: Виведе в консоль Render точну причину відхилення запиту від самого Telegram
-      console.error(
-        "❌ [DIAGNOSTIC] Telegram API повернув помилку:",
-        responseData,
-      );
-    } else {
-      console.log(
-        "✅ [DIAGNOSTIC] Telegram успішно надіслав повідомлення з кнопками!",
-      );
-    }
-
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "HTML", // HTML-режим для підтримки жирного тексту та копіювання ID
+        }),
+      },
+    );
     return { ok: telegramResponse.ok };
   } catch (error) {
-    console.error("❌ [DIAGNOSTIC] Мережева помилка fetch:", error.message);
+    console.error("Telegram notification failed:", error);
     return { ok: false };
   }
 }
