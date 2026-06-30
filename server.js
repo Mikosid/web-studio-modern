@@ -250,8 +250,10 @@ async function sendTelegramNotification(contactRequest) {
     return { ok: false };
   }
 
-  // Форматуємо чистий текст за допомогою HTML-тегів.
-  // Браузери та смартфони самі зроблять телефон та email клікабельними!
+  // Очищаємо номер від усього, крім цифр (Telegram API вимагає посилання без знаку "+")
+  const cleanPhone = contactRequest.phone.replace(/\D/g, "");
+
+  // Форматуємо текст: телефон та email додаток Telegram автоматично зробить клікабельними
   const message = [
     "🆕 <b>New Web Studio request</b>",
     `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // Кліком по ID його можна миттєво скопіювати
@@ -262,6 +264,18 @@ async function sendTelegramNotification(contactRequest) {
     `📅 <b>Created:</b> ${contactRequest.createdAt}`,
   ].join("\n");
 
+  // Залишаємо одну ідеальну кнопку, яка використовує дозволений протокол https://
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        {
+          text: "💬 Чат у Telegram",
+          url: `https://t.me{cleanPhone}`,
+        },
+      ],
+    ],
+  };
+
   try {
     const telegramResponse = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -271,7 +285,8 @@ async function sendTelegramNotification(contactRequest) {
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: "HTML", // HTML-режим для підтримки жирного тексту та копіювання ID
+          parse_mode: "HTML", // Підтримка HTML-тегів <b> та <code>
+          reply_markup: JSON.stringify(replyMarkup), // Передаємо кнопку як рядок
         }),
       },
     );
