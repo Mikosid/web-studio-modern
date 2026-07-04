@@ -37,6 +37,22 @@ const RequestSchema = new mongoose.Schema({
 
 const RequestModel = mongoose.model("Request", RequestSchema);
 
+const SubscriberSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+  },
+  createdAt: {
+    type: String,
+    required: true,
+  },
+});
+
+const SubscriberModel = mongoose.model("Subscriber", SubscriberSchema);
+
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -80,6 +96,11 @@ createServer(async (request, response) => {
   try {
     if (request.method === "POST" && request.url === "/api/requests") {
       await handleCreateRequest(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/api/subscribers") {
+      await handleCreateSubscriber(request, response);
       return;
     }
 
@@ -127,6 +148,42 @@ async function handleCreateRequest(request, response) {
       : "Request saved, but Telegram notification was not sent. Check server settings.",
     requestId: savedRequest.id,
     telegramSent: telegramResult.ok,
+  });
+}
+
+async function handleCreateSubscriber(request, response) {
+  const body = await readJsonBody(request);
+
+  const email = String(body.email || "")
+    .trim()
+    .toLowerCase();
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    sendJson(response, 400, {
+      message: "Invalid email address.",
+    });
+    return;
+  }
+
+  const existingSubscriber = await SubscriberModel.findOne({ email });
+
+  if (existingSubscriber) {
+    sendJson(response, 409, {
+      message: "This email is already subscribed.",
+    });
+    return;
+  }
+
+  const subscriber = await SubscriberModel.create({
+    email,
+    createdAt: new Date().toISOString(),
+  });
+
+  await sendTelegramSubscriberNotification(subscriber);
+
+  sendJson(response, 201, {
+    message: "Subscription successful.",
+    id: subscriber._id,
   });
 }
 
@@ -190,116 +247,96 @@ async function saveRequest(contactRequest) {
   }
 }
 
-// async function sendTelegramNotification(contactRequest) {
-//   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-//     return { ok: false };
-//   }
+async function sendTelegramNotification(contactRequest) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return { ok: false };
+  }
 
-//   // Очищаємо номер телефону від усього, крім цифр
-//   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
+  // Очищаємо номер телефону від усього, крім цифр
+  const cleanPhone = contactRequest.phone.replace(/\D/g, "");
 
-//   // Форматуємо текст за допомогою HTML-тегів
-//   const message = [
-//     "🆕 <b>New Web Studio request</b>",
-//     `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // загорнули в code, щоб копіювати в один клік
-//     `👤 <b>Name:</b> ${contactRequest.name}`,
-//     `📞 <b>Phone:</b> ${contactRequest.phone}`,
-//     `📧 <b>Email:</b> ${contactRequest.email}`,
-//     `💬 <b>Comment:</b> ${contactRequest.comment || "—"}`,
-//     `📅 <b>Created:</b> ${contactRequest.createdAt}`,
-//   ].join("\n");
+  // Форматуємо текст за допомогою HTML-тегів
+  const message = [
+    "🆕 <b>New Web Studio request</b>",
+    `🆔 <b>ID:</b> <code>${contactRequest.id}</code>`, // загорнули в code, щоб копіювати в один клік
+    `👤 <b>Name:</b> ${contactRequest.name}`,
+    `📞 <b>Phone:</b> ${contactRequest.phone}`,
+    `📧 <b>Email:</b> ${contactRequest.email}`,
+    `💬 <b>Comment:</b> ${contactRequest.comment || "—"}`,
+    `📅 <b>Created:</b> ${contactRequest.createdAt}`,
+  ].join("\n");
 
-//   const replyMarkup = {
-//     inline_keyboard: [
-//       [
-//         {
-//           text: "📞 Зателефонувати",
-//           url: `tel:${contactRequest.phone}`,
-//         },
-//         {
-//           text: "💬 Чат у Telegram",
-//           url: `https://t.me/+${cleanPhone}`,
-//         },
-//       ],
-//     ],
-//   };
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        { text: "📞 Зателефонувати", url: `https://t.me/+${cleanPhone}` },
+        { text: "✉️ Email", url: `mailto:${contactRequest.email}` },
+        {
+          text: "💬 Чат у Telegram",
+          url: `https://t.me/+${cleanPhone}`,
+        },
+      ],
+    ],
+  };
 
-//   try {
-//     const telegramResponse = await fetch(
-//       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-//       {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           chat_id: TELEGRAM_CHAT_ID,
-//           text: message,
-//           parse_mode: "HTML",
-//           reply_markup: JSON.stringify(replyMarkup),
-//         }),
-//       },
-//     );
-//     return { ok: telegramResponse.ok };
-//   } catch (error) {
-//     console.error("Telegram notification failed:", error);
-//     return { ok: false };
-//   }
-// }
-
-export async function sendTelegramNotification(contactRequest) {
   try {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-      console.warn("Telegram is not configured");
-      return { ok: false, reason: "missing_config" };
-    }
-
-    if (!contactRequest?.id || !contactRequest?.name) {
-      console.warn("Invalid contactRequest payload");
-      return { ok: false, reason: "invalid_payload" };
-    }
-
-    const escapeHtml = (text = "") =>
-      String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-
-    const message = [
-      "🆕 <b>New Web Studio request</b>",
-      `🆔 <b>ID:</b> <code>${escapeHtml(contactRequest.id)}</code>`,
-      `👤 <b>Name:</b> ${escapeHtml(contactRequest.name)}`,
-      `📞 <b>Phone:</b> ${escapeHtml(contactRequest.phone)}`,
-      `📧 <b>Email:</b> ${escapeHtml(contactRequest.email)}`,
-      `💬 <b>Comment:</b> ${escapeHtml(contactRequest.comment || "—")}`,
-      `📅 <b>Created:</b> ${escapeHtml(contactRequest.createdAt)}`,
-    ].join("\n");
-
-    const payload = {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: "HTML",
-      disable_web_page_preview: true,
-    };
-
-    const response = await fetch(
+    const telegramResponse = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "HTML",
+          reply_markup: replyMarkup,
+        }),
+      },
+    );
+    return { ok: telegramResponse.ok };
+  } catch (error) {
+    console.error("Telegram notification failed:", error);
+    return { ok: false };
+  }
+}
+
+async function sendTelegramSubscriberNotification(subscriber) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return { ok: false };
+  }
+
+  const message = [
+    "📩 <b>New Subscriber</b>",
+    "",
+    `📧 <b>Email:</b> ${subscriber.email}`,
+    `📅 <b>Subscribed:</b> ${subscriber.createdAt}`,
+  ].join("\n");
+
+  try {
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "HTML",
+        }),
       },
     );
 
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      console.error("Telegram API error:", data);
-      return { ok: false, reason: "telegram_error", data };
-    }
-
-    return { ok: true };
+    return {
+      ok: telegramResponse.ok,
+    };
   } catch (error) {
-    console.error("Telegram notification failed:", error);
-    return { ok: false, reason: "exception" };
+    console.error(error);
+
+    return {
+      ok: false,
+    };
   }
 }
 

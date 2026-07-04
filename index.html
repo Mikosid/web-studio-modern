@@ -14,6 +14,7 @@
         integrity="sha512-4xo8blKMVCiXpTaLzQSLSw3KFOVPWhm/TRtuPVc4WG6kUgjH6J03IBuG7JZPkcWMxJ5huwaBpOpnwYElP/m6wg=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/toast.css">
 </head>
 
 <body>
@@ -494,28 +495,32 @@
                 <p class="footer-social-text">Social media</p>
                 <ul class="footer-icon-list">
                     <li class="footer-icon-item">
-                        <a href="" class="footer-icon-link">
+                        <a href="https://github.com/Mikosid/web-studio-modern" target="_blank" rel="noopener noreferrer"
+                            class="footer-icon-link">
                             <svg class="footer-icon-icon" width="24" height="24">
                                 <use href="./images/icons.svg#icon-instagram-2"></use>
                             </svg>
                         </a>
                     </li>
                     <li class="footer-icon-item">
-                        <a href="" class="footer-icon-link">
+                        <a href="https://github.com/Mikosid/web-studio-modern" target="_blank" rel="noopener noreferrer"
+                            class="footer-icon-link">
                             <svg class="footer-icon-icon" width="24" height="24">
                                 <use href="./images/icons.svg#icon-twitter-1"></use>
                             </svg>
                         </a>
                     </li>
                     <li class="footer-icon-item">
-                        <a href="" class="footer-icon-link">
+                        <a href="https://github.com/Mikosid/web-studio-modern" target="_blank" rel="noopener noreferrer"
+                            class="footer-icon-link">
                             <svg class="footer-icon-icon" width="24" height="24">
                                 <use href="./images/icons.svg#icon-facebook-1"></use>
                             </svg>
                         </a>
                     </li>
                     <li class="footer-icon-item">
-                        <a href="" class="footer-icon-link">
+                        <a href="https://github.com/Mikosid/web-studio-modern" target="_blank" rel="noopener noreferrer"
+                            class="footer-icon-link">
                             <svg class="footer-icon-icon" width="24" height="24">
                                 <use href="./images/icons.svg#icon-linkedin-1"></use>
                             </svg>
@@ -525,9 +530,11 @@
             </div>
             <div class="footer-subscribe">
                 <p class="footer-subscribe-text">Subscribe</p>
-                <form class="footer-form">
-                    <label for="footer-email" class="footer-label"><input type="email" name="footer-email"
-                            class="footer-input" placeholder="E-mail" id="footer-email" /></label>
+                <form class="footer-form" id="subscribe-form">
+                    <label for="footer-email" class="footer-label">
+                        <input type="email" name="footer-email" class="footer-input" placeholder="E-mail"
+                            id="footer-email" autocomplete="email" required />
+                    </label>
                     <button type="submit" class="footer-btn">
                         Subscribe<svg class="footer-btn-icon" width="24" height="24">
                             <use href="./images/icons.svg#icon-icon-send"></use>
@@ -653,6 +660,7 @@
         </ul>
     </div>
     <script type="module" src="./js/main.js"></script>
+    <script type="module" src="./js/subscribe.js"></script>
 </body>
 
 </html>
