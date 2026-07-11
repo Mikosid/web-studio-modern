@@ -2,8 +2,6 @@
 
 A landing page originally built during a web development course — taken off the shelf a year later and modernized with a custom Node.js backend, MongoDB persistence, and Telegram bot notifications.
 
-![Hero](https://i.imgur.com/placeholder.png)
-
 ## Features
 
 ### Frontend
