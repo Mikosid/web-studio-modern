@@ -255,6 +255,10 @@ async function sendTelegramNotification(contactRequest) {
   // Очищаємо номер телефону від усього, крім цифр
   const cleanPhone = contactRequest.phone.replace(/\D/g, "");
 
+  const internationalPhone = cleanPhone.startsWith("38")
+    ? cleanPhone
+    : `38${cleanPhone}`;
+
   // Форматуємо текст за допомогою HTML-тегів
   const message = [
     "🆕 <b>New Web Studio request</b>",
@@ -269,11 +273,9 @@ async function sendTelegramNotification(contactRequest) {
   const replyMarkup = {
     inline_keyboard: [
       [
-        { text: "📞 Зателефонувати", url: `https://t.me/+${cleanPhone}` },
-        { text: "✉️ Email", url: `mailto:${contactRequest.email}` },
         {
           text: "💬 Чат у Telegram",
-          url: `https://t.me/+${cleanPhone}`,
+          url: `https://t.me/+${internationalPhone}`,
         },
       ],
     ],
@@ -327,6 +329,13 @@ async function sendTelegramSubscriberNotification(subscriber) {
         }),
       },
     );
+
+    const data = await telegramResponse.json();
+    if (!telegramResponse.ok) {
+      console.error("❌ Telegram error:", JSON.stringify(data));
+    }
+
+    return { ok: telegramResponse.ok };
 
     return {
       ok: telegramResponse.ok,
