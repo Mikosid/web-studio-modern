@@ -133,7 +133,7 @@ async function handleCreateRequest(request, response) {
 
   const savedRequest = {
     id: randomUUID(),
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toLocaleString("uk-UA", { timeZone: "Europe/Kyiv" }),
     ...contactRequest,
   };
 
